@@ -1,5 +1,6 @@
 import random
 import logging
+import copy
 
 from montecarlo import INF, NEG_INF, Player, GameStates, Board, Node
 
@@ -30,9 +31,7 @@ class NACBoard(Board):
     (2, 5, 8))
 
   def copy(self):
-    copy = NACBoard()
-    copy.turn = self.turn
-    copy.contents = self.contents
+    return copy.deepcopy(self)
 
   def evaluate(self):
     state = self.getGameState()
@@ -72,10 +71,11 @@ class NACBoard(Board):
     return [move for move in range(len(self.contents)) if self.contents[move] == EMPTY]
 
   def makeMove(self, move, player):
-    assert player.PLAYER_NUM == self.turn
+    assert player == self.turn
 
-    self.contents[move] = player.PLAYER_NUM
-    self.turn = Player.other(self.turn)
+    if self.contents[move] == EMPTY:
+      self.contents[move] = player
+      self.turn = Player.other(self.turn)
 
 
   def reset(self):
@@ -108,7 +108,7 @@ class Game(object):
 
     self.board.prettyPrint()
     move = activePlayer.getMove(self.board)
-    self.board.makeMove(move, activePlayer)
+    self.board.makeMove(move, activePlayer.PLAYER_NUM)
 
   def playGame(self):
     assert self.player1 is not None
@@ -134,6 +134,15 @@ class Game(object):
       LOGGER.info("Game ended in a draw.")
 
 
+class MonteCarloPlayer(Player):
+  def getMove(self, board):
+    self.node = Node(None, self.PLAYER_NUM, board.turn, board)
+    move = self.node.getMove(0, 4)
+
+    LOGGER.info("%s believes %s is the best move" % (self.name, move))
+    return move
+
+
 class RandomPlayer(Player):
   def getMove(self, board):
     return random.choice(board.getPossibleMoves(self.PLAYER_NUM))
@@ -148,6 +157,6 @@ if __name__ == "__main__":
   setupStdoutLogger()
 
   game = Game()
-  game.setPlayer(RandomPlayer("CPU1"), Player.PLAYER_1)
-  game.setPlayer(RandomPlayer("CPU2"), Player.PLAYER_2)
+  game.setPlayer(MonteCarloPlayer("Monte"), Player.PLAYER_2)
+  game.setPlayer(UserPlayer("User"), Player.PLAYER_1)
   game.playGame()

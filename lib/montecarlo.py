@@ -1,4 +1,5 @@
 import math
+import random
 import logging
 
 from abc import ABC, abstractmethod
@@ -64,13 +65,15 @@ class Node(object):
         self.board = board
         self.children = None
 
+        self.nodeValue = None
+
     def _populateChildren(self):
         self.children = dict()
 
-        for move in self.board.getPossibleMoves(self.playersTurn):
+        for move in self.board.getPossibleMoves(self.playerTurn):
             nextBoard = self.board.copy()
-            nextBoard.makeMove(move, self.playersTurn)
-            self.children[move] = Node(self, self.treePlayer, Player.other(self.playersTurn), nextBoard)
+            nextBoard.makeMove(move, self.playerTurn)
+            self.children[move] = Node(self, self.treePlayer, Player.other(self.playerTurn), nextBoard)
 
     def evaluateBoard(self):
         boardValue = self.board.evaluate()
@@ -79,16 +82,15 @@ class Node(object):
 
         return boardValue
 
-    def evaluateNode(self, currentDepth, maxDepth):
-        self.nodeValue = self._evaluateNode(currentDepth, maxDepth)
-        return self.nodeValue
+    def evaluate(self, currentDepth, maxDepth):
+      self.nodeValue = self._evaluate(currentDepth, maxDepth)
 
-    def _evaluateNode(self, currentDepth, maxDepth):
+    def _evaluate(self, currentDepth, maxDepth):
         boardState = self.board.getGameState()
         if boardState != GameStates.CONTINUE:
             return self.evaluateEndGame(boardState)
 
-        if currentDepth == maxDepth or len(self.getPossibleMoves(self.playerTurn)) == 0:
+        if currentDepth == maxDepth or len(self.board.getPossibleMoves(self.playerTurn)) == 0:
             return self.evaluateBoard()
 
         if self.children is None:
@@ -96,23 +98,31 @@ class Node(object):
 
         comparison = lambda x, y: x > y
         bestMoveValue = NEG_INF
-        if self.playersTurn != self.treePlayer:
+        if self.playerTurn != self.treePlayer:
             comparison = lambda x, y: x < y
             bestMoveValue = INF
 
         bestMove = None
         for move in self.children:
-            nodeValue = self.children[move].evaluateNode(currentDepth - 1, maxDepth)
+            self.children[move].evaluate(currentDepth + 1, maxDepth)
+            nodeValue = self.children[move].nodeValue
             if comparison(nodeValue, bestMoveValue):
                 bestMove = move
                 bestMoveValue = nodeValue
 
-        return move
+        return bestMoveValue
+
+    def getMove(self, currentDepth, maxDepth):
+      if not self.nodeValue:
+        self.evaluate(currentDepth, maxDepth)
+
+      bestMoves = [move for move in self.children if self.children[move].nodeValue == self.nodeValue]
+      return random.choice(bestMoves)
 
     def evaluateEndGame(self, boardState):
-        if boardState == GameState.PLAYER_1_WIN:
+        if boardState == GameStates.PLAYER_1_WIN:
             return (self.treePlayer == Player.PLAYER_1 and INF) or NEG_INF
-        elif boardState == GameState.PLAYER_2_WIN:
+        elif boardState == GameStates.PLAYER_2_WIN:
             return (self.treePlayer == Player.PLAYER_2 and INF) or NEG_INF
 
         return 0
