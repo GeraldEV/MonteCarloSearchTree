@@ -1,18 +1,26 @@
 import math
 
-from abc import abstractclass, abstractmethod
+from abc import ABC, abstractmethod
 
 
 INF = math.inf
 NEG_INF = -math.inf
 
 
-class Player(object):
+class Player(ABC):
     PLAYER_1 = 1
     PLAYER_2 = 2
 
-    def other(self, player):
+    @staticmethod
+    def other(player):
         return 3 - player
+
+    def __init__(self, name):
+      self.name = name
+
+    @abstractmethod
+    def getMove(self, board):
+      pass
 
 
 class GameStates(object):
@@ -22,8 +30,7 @@ class GameStates(object):
     PLAYER_2_WIN = 2
 
 
-@abstractclass
-class Board(object):
+class Board(ABC):
     @abstractmethod
     def getPossibleMoves(self, player):
         pass
@@ -37,7 +44,7 @@ class Board(object):
         pass
 
     @abstractmethod
-    def makeMove(self):
+    def makeMove(self, move, player):
         pass
 
     @abstractmethod
