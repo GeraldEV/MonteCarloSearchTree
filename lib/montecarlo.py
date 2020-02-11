@@ -1,7 +1,9 @@
 import math
+import logging
 
 from abc import ABC, abstractmethod
 
+LOGGER = logging.getLogger("game.montecarlo")
 
 INF = math.inf
 NEG_INF = -math.inf

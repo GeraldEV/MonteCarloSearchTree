@@ -1,4 +1,20 @@
+import random
+import logging
+
 from montecarlo import INF, NEG_INF, Player, GameStates, Board, Node
+
+
+LOGGER = logging.getLogger("game")
+
+def setupStdoutLogger(level=logging.DEBUG):
+  LOGGER.setLevel(logging.DEBUG)
+
+  ch = logging.StreamHandler()
+  ch.setLevel(level)
+  formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s", "%H:%M:%S")
+  ch.setFormatter(formatter)
+  LOGGER.addHandler(ch)
+
 
 EMPTY = 0
 
@@ -12,9 +28,6 @@ class NACBoard(Board):
     (0, 3, 6),
     (1, 4, 7),
     (2, 5, 8))
-
-  def __init__(self):
-    self.reset()
 
   def copy(self):
     copy = NACBoard()
@@ -56,7 +69,7 @@ class NACBoard(Board):
     return GameStates.CONTINUE
 
   def getPossibleMoves(self, player):
-    return [move for move in self.content if move == EMPTY]
+    return [move for move in range(len(self.contents)) if self.contents[move] == EMPTY]
 
   def makeMove(self, move, player):
     assert player.PLAYER_NUM == self.turn
@@ -66,16 +79,14 @@ class NACBoard(Board):
 
 
   def reset(self):
+    LOGGER.info("Reset board")
     self.contents = [0 for i in range(9)]
     self.turn = Player.PLAYER_1
 
-  def prettyPrint(self, stdout=True):
-    output = " {0} | {1} | {2}\n---+---+---\n {3} | {4} | {5}\n---+---+---\n {6} | {7} | {8}\n\n"
+  def prettyPrint(self):
+    output = "\n {0} | {1} | {2}\n---+---+---\n {3} | {4} | {5}\n---+---+---\n {6} | {7} | {8}\n\n"
     output = output.format(*(str(x) for x in self.contents))
-    if not stdout:
-      return output
-
-    print(output)
+    LOGGER.info(output)
 
 
 class Game(object):
@@ -95,45 +106,48 @@ class Game(object):
   def _processOneTurn(self):
     activePlayer = self.player1 if self.board.turn == Player.PLAYER_1 else self.player2
 
-    board.prettyPrint()
-    move = activePlayer.getMove(board)
-    board.makeMove(move, activePlayer)
+    self.board.prettyPrint()
+    move = activePlayer.getMove(self.board)
+    self.board.makeMove(move, activePlayer)
 
   def playGame(self):
     assert self.player1 is not None
     assert self.player2 is not None
 
-    board.reset()
+    self.board.reset()
 
-    gameState = board.getGameState()
-    while gameState == GameState.CONTINUE:
+    gameState = self.board.getGameState()
+    while gameState == GameStates.CONTINUE:
       self._processOneTurn()
-      gameState = board.getGameState()
+      gameState = self.board.getGameState()
 
     self.announceResult(gameState)
 
   def announceResult(self, state):
-    print("The game is over.")
-    if state == GameState.PLAYER_1_WIN:
-      print("Player 1 wins! Well Done %s." % self.player1.name)
-    elif state == GameState.PLAYER_2_WIN:
-      print("Player 2 wins! Well Done %s." % self.player2.name)
+    self.board.prettyPrint()
+    LOGGER.info("The game is over.")
+    if state == GameStates.PLAYER_1_WIN:
+      LOGGER.info("Player 1 wins! Well Done %s." % self.player1.name)
+    elif state == GameStates.PLAYER_2_WIN:
+      LOGGER.info("Player 2 wins! Well Done %s." % self.player2.name)
     else:
-      print("Game ended in a draw.")
+      LOGGER.info("Game ended in a draw.")
 
 
-class TestPlayer(Player):
-  def __init__(self):
-    self.PLAYER_NUM = Player.PLAYER_1
-
+class RandomPlayer(Player):
   def getMove(self, board):
-    return 4
+    return random.choice(board.getPossibleMoves(self.PLAYER_NUM))
+
+
+class UserPlayer(Player):
+  def getMove(self, board):
+    return int(input(">> "))
 
 
 if __name__ == "__main__":
-  board = NACBoard()
-  print("Created board!")
-  print(board.evaluate())
-  board.makeMove(4, TestPlayer("Test"))
-  board.prettyPrint()
-  print(board.evaluate())
+  setupStdoutLogger()
+
+  game = Game()
+  game.setPlayer(RandomPlayer("CPU1"), Player.PLAYER_1)
+  game.setPlayer(RandomPlayer("CPU2"), Player.PLAYER_2)
+  game.playGame()
