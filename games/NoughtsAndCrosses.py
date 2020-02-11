@@ -20,6 +20,9 @@ def setupStdoutLogger(level=logging.DEBUG):
 EMPTY = 0
 
 class NACBoard(Board):
+  PLAYER_1_PIECE = "O"
+  PLAYER_2_PIECE = "X"
+
   WINNING_SETS = (
     (0, 1, 2),
     (3, 4, 5),
@@ -85,8 +88,20 @@ class NACBoard(Board):
 
   def prettyPrint(self):
     output = "\n {0} | {1} | {2}\n---+---+---\n {3} | {4} | {5}\n---+---+---\n {6} | {7} | {8}\n\n"
-    output = output.format(*(str(x) for x in self.contents))
+    output = output.format(*self.__getStringPieces())
     LOGGER.info(output)
+
+  def __getStringPieces(self):
+    return [self.__getStringPiece(piece) for piece in self.contents]
+
+  def __getStringPiece(self, piece):
+    if piece == EMPTY:
+      return " "
+    if piece == Player.PLAYER_1:
+      return NACBoard.PLAYER_1_PIECE
+    if piece == Player.PLAYER_2:
+      return NACBoard.PLAYER_2_PIECE
+    return "!"
 
 
 class Game(object):
@@ -135,9 +150,17 @@ class Game(object):
 
 
 class MonteCarloPlayer(Player):
+  def __init__(self, name):
+    super().__init__(name)
+    
+    self.maxDepth = 4
+
+  def setMaxDepth(self, depth):
+    self.maxDepth = depth
+
   def getMove(self, board):
     self.node = Node(None, self.PLAYER_NUM, board.turn, board)
-    move = self.node.getMove(0, 4)
+    move = self.node.getMove(0, self.maxDepth)
 
     LOGGER.info("%s believes %s is the best move" % (self.name, move))
     return move
@@ -150,13 +173,26 @@ class RandomPlayer(Player):
 
 class UserPlayer(Player):
   def getMove(self, board):
-    return int(input(">> "))
+    possiblePositions = board.getPossibleMoves(self.PLAYER_NUM)
+    move = None
+
+    while move not in possiblePositions:
+        try:
+            move = int(input(">> "))
+        except:
+            pass
+
+    return move
 
 
 if __name__ == "__main__":
   setupStdoutLogger()
 
   game = Game()
-  game.setPlayer(MonteCarloPlayer("Monte"), Player.PLAYER_2)
-  game.setPlayer(UserPlayer("User"), Player.PLAYER_1)
+
+  monteCarloPlayer = MonteCarloPlayer("Monty")
+  game.setPlayer(monteCarloPlayer, Player.PLAYER_1)
+
+  userPlayer = UserPlayer("Gerald")
+  game.setPlayer(userPlayer, Player.PLAYER_2)
   game.playGame()
