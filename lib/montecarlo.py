@@ -3,34 +3,12 @@ import random
 import logging
 
 from abc import ABC, abstractmethod
+from game import GameStates, Player
 
 LOGGER = logging.getLogger("game.montecarlo")
 
 INF = math.inf
 NEG_INF = -math.inf
-
-
-class Player(ABC):
-    PLAYER_1 = 1
-    PLAYER_2 = 2
-
-    @staticmethod
-    def other(player):
-        return 3 - player
-
-    def __init__(self, name):
-      self.name = name
-
-    @abstractmethod
-    def getMove(self, board):
-      pass
-
-
-class GameStates(object):
-    DRAW = -1
-    CONTINUE = 0
-    PLAYER_1_WIN = 1
-    PLAYER_2_WIN = 2
 
 
 class Board(ABC):
@@ -56,11 +34,11 @@ class Board(ABC):
 
 
 class Node(object):
-    def __init__(self, parent, treePlayer, playerTurn, board):
+    def __init__(self, parent, treePlayer, board):
         self.parent = parent
         self.treePlayer = treePlayer
 
-        self.playerTurn = playerTurn
+        self.playerTurn = board.turn
 
         self.board = board
         self.children = None
@@ -73,7 +51,7 @@ class Node(object):
         for move in self.board.getPossibleMoves(self.playerTurn):
             nextBoard = self.board.copy()
             nextBoard.makeMove(move, self.playerTurn)
-            self.children[move] = Node(self, self.treePlayer, Player.other(self.playerTurn), nextBoard)
+            self.children[move] = Node(self, self.treePlayer, nextBoard)
 
     def evaluateBoard(self):
         boardValue = self.board.evaluate()
@@ -126,3 +104,19 @@ class Node(object):
             return (self.treePlayer == Player.PLAYER_2 and INF) or NEG_INF
 
         return 0
+
+
+class MonteCarloPlayer(Player):
+  def __init__(self, name):
+    super().__init__(name)
+    self.setMaxDepth(4)
+
+  def setMaxDepth(self, depth):
+    self.maxDepth = depth
+
+  def getMove(self, board):
+    self.node = Node(None, self.PLAYER_NUM, board)
+    move = self.node.getMove(0, self.maxDepth)
+
+    LOGGER.debug("%s believes %s is the best move" % (self.name, move))
+    return move

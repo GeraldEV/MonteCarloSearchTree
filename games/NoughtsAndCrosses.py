@@ -2,7 +2,8 @@ import random
 import logging
 import copy
 
-from montecarlo import INF, NEG_INF, Player, GameStates, Board, Node
+from montecarlo import INF, NEG_INF, Board, MonteCarloPlayer
+from game import Game, Player, GameStates, RandomPlayer, UserPlayer
 
 
 LOGGER = logging.getLogger("game")
@@ -104,91 +105,10 @@ class NACBoard(Board):
     return "!"
 
 
-class Game(object):
-  def __init__(self):
-    self.board = NACBoard()
-    self.player1 = None
-    self.player2 = None
-
-  def setPlayer(self, player, playerIdentifier):
-    player.PLAYER_NUM = playerIdentifier
-
-    if playerIdentifier == Player.PLAYER_1:
-      self.player1 = player
-    elif playerIdentifier == Player.PLAYER_2:
-      self.player2 = player
-
-  def _processOneTurn(self):
-    activePlayer = self.player1 if self.board.turn == Player.PLAYER_1 else self.player2
-
-    self.board.prettyPrint()
-    move = activePlayer.getMove(self.board)
-    self.board.makeMove(move, activePlayer.PLAYER_NUM)
-
-  def playGame(self):
-    assert self.player1 is not None
-    assert self.player2 is not None
-
-    self.board.reset()
-
-    gameState = self.board.getGameState()
-    while gameState == GameStates.CONTINUE:
-      self._processOneTurn()
-      gameState = self.board.getGameState()
-
-    self.announceResult(gameState)
-
-  def announceResult(self, state):
-    self.board.prettyPrint()
-    LOGGER.info("The game is over.")
-    if state == GameStates.PLAYER_1_WIN:
-      LOGGER.info("Player 1 wins! Well Done %s." % self.player1.name)
-    elif state == GameStates.PLAYER_2_WIN:
-      LOGGER.info("Player 2 wins! Well Done %s." % self.player2.name)
-    else:
-      LOGGER.info("Game ended in a draw.")
-
-
-class MonteCarloPlayer(Player):
-  def __init__(self, name):
-    super().__init__(name)
-    
-    self.maxDepth = 4
-
-  def setMaxDepth(self, depth):
-    self.maxDepth = depth
-
-  def getMove(self, board):
-    self.node = Node(None, self.PLAYER_NUM, board.turn, board)
-    move = self.node.getMove(0, self.maxDepth)
-
-    LOGGER.info("%s believes %s is the best move" % (self.name, move))
-    return move
-
-
-class RandomPlayer(Player):
-  def getMove(self, board):
-    return random.choice(board.getPossibleMoves(self.PLAYER_NUM))
-
-
-class UserPlayer(Player):
-  def getMove(self, board):
-    possiblePositions = board.getPossibleMoves(self.PLAYER_NUM)
-    move = None
-
-    while move not in possiblePositions:
-        try:
-            move = int(input(">> "))
-        except:
-            pass
-
-    return move
-
-
 if __name__ == "__main__":
   setupStdoutLogger()
 
-  game = Game()
+  game = Game(NACBoard())
 
   monteCarloPlayer = MonteCarloPlayer("Monty")
   game.setPlayer(monteCarloPlayer, Player.PLAYER_1)
