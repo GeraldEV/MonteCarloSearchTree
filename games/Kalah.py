@@ -39,13 +39,18 @@ class KalahBoard(Board):
     elif gameState == GameStates.DRAW:
       return 0
 
-    score = self.stores[Player.PLAYER_1] - self.stores[Player.PLAYER_2]
-    nextTurnDifference = 10
-    if self.turn == Player.PLAYER_2:
-      nextTurnDifference *= -1
+    p1score = self.stores[Player.PLAYER_1]
+    p2score = self.stores[Player.PLAYER_2]
 
-    score += nextTurnDifference
-    return score
+    for house in range(len(self.contents[Player.PLAYER_1])):
+      if self.contents[Player.PLAYER_1][house] == house + 1:
+        p1score += 1
+
+    for house in range(len(self.contents[Player.PLAYER_2])):
+      if self.contents[Player.PLAYER_2][house] == house + 1:
+        p2score += 1
+
+    return p1score - p2score
 
   def getGameState(self):
     sumHouses = (sum(self.contents[Player.PLAYER_1]), sum(self.contents[Player.PLAYER_2]))
