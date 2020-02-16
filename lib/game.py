@@ -70,7 +70,6 @@ class Game(object):
 
     move = activePlayer.getMove(self.board)
     self.board.makeMove(move, activePlayer.PLAYER_NUM)
-    LOGGER.debug("Evaluate: %s" % self.board.evaluate())
 
   def playGame(self):
     assert self.player1 is not None

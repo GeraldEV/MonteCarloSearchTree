@@ -30,28 +30,6 @@ class KalahBoard(Board):
 
     return copyBoard
 
-  def evaluate(self):
-    gameState = self.getGameState()
-    if gameState == GameStates.PLAYER_1_WIN:
-      return INF
-    elif gameState == GameStates.PLAYER_2_WIN:
-      return NEG_INF
-    elif gameState == GameStates.DRAW:
-      return 0
-
-    p1score = self.stores[Player.PLAYER_1]
-    p2score = self.stores[Player.PLAYER_2]
-
-    for house in range(len(self.contents[Player.PLAYER_1])):
-      if self.contents[Player.PLAYER_1][house] == house + 1:
-        p1score += 1
-
-    for house in range(len(self.contents[Player.PLAYER_2])):
-      if self.contents[Player.PLAYER_2][house] == house + 1:
-        p2score += 1
-
-    return p1score - p2score
-
   def getGameState(self):
     sumHouses = (sum(self.contents[Player.PLAYER_1]), sum(self.contents[Player.PLAYER_2]))
     if sumHouses[0] == 0 or sumHouses[1] == 0:
@@ -143,6 +121,29 @@ class KalahBoard(Board):
     LOGGER.info(outputLine)
 
 
+def evaluateBoard(board):
+  gameState = board.getGameState()
+  if gameState == GameStates.PLAYER_1_WIN:
+    return INF
+  elif gameState == GameStates.PLAYER_2_WIN:
+    return NEG_INF
+  elif gameState == GameStates.DRAW:
+    return 0
+
+  p1score = board.stores[Player.PLAYER_1]
+  p2score = board.stores[Player.PLAYER_2]
+
+  for house in range(len(board.contents[Player.PLAYER_1])):
+    if board.contents[Player.PLAYER_1][house] == house + 1:
+      p1score += 1
+
+  for house in range(len(board.contents[Player.PLAYER_2])):
+    if board.contents[Player.PLAYER_2][house] == house + 1:
+      p2score += 1
+
+  return p1score - p2score
+
+
 if __name__ == "__main__":
   setupStdoutLogger()
 
@@ -151,7 +152,7 @@ if __name__ == "__main__":
   userPlayer = UserPlayer("Gerald")
   game.setPlayer(userPlayer, Player.PLAYER_1)
 
-  montePlayer = MonteCarloPlayer("Monty")
+  montePlayer = MonteCarloPlayer("Monty", evaluateBoard)
   game.setPlayer(montePlayer, Player.PLAYER_2)
 
   game.playGame()

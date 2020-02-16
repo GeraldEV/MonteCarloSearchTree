@@ -105,14 +105,35 @@ class NACBoard(Board):
     return "!"
 
 
+def evaluateBoard(board):
+  state = board.getGameState()
+  if state == GameStates.PLAYER_1_WIN:
+    return INF
+  if state == GameStates.PLAYER_2_WIN:
+    return NEG_INF
+  if state == GameStates.DRAW:
+    return 0
+
+  player1Score = 0
+  player2Score = 0
+  for winningSet in NACBoard.WINNING_SETS:
+    elements = [board.contents[element] for element in winningSet]
+    if all(map(lambda x: x != Player.PLAYER_2, elements)):
+      player1Score += elements.count(Player.PLAYER_1) + 1
+    if all(map(lambda x: x != Player.PLAYER_1, elements)):
+      player2Score += elements.count(Player.PLAYER_2) + 1
+
+  return player1Score - player2Score
+
 if __name__ == "__main__":
   setupStdoutLogger()
 
   game = Game(NACBoard())
 
-  monteCarloPlayer = MonteCarloPlayer("Monty")
+  monteCarloPlayer = MonteCarloPlayer("Monty", evaluateBoard)
   game.setPlayer(monteCarloPlayer, Player.PLAYER_1)
 
   userPlayer = UserPlayer("Gerald")
   game.setPlayer(userPlayer, Player.PLAYER_2)
+
   game.playGame()
