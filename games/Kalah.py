@@ -30,15 +30,32 @@ class KalahBoard(Board):
 
     return copyBoard
 
+  def evaluate(self):
+    gameState = self.getGameState()
+    if gameState == GameStates.PLAYER_1_WIN:
+      return INF
+    elif gameState == GameStates.PLAYER_2_WIN:
+      return NEG_INF
+    elif gameState == GameStates.DRAW:
+      return 0
+
+    score = self.stores[Player.PLAYER_1] - self.stores[Player.PLAYER_2]
+
+    nextTurnDifference = 10
+    if self.turn == Player.PLAYER_2:
+      nextTurnDifference *= -1
+
+    return score + nextTurnDifference
+
   def getGameState(self):
     sumHouses = (sum(self.contents[Player.PLAYER_1]), sum(self.contents[Player.PLAYER_2]))
-    if sumHouses[0] == 0 or sumHouses[1] == 0:
-      self.stores[Player.PLAYER_1] += sumHouses[0]
-      self.stores[Player.PLAYER_2] += sumHouses[1]
-      self.contents[Player.PLAYER_1] = [0 for i in range(self.houses)]
-      self.contents[Player.PLAYER_2] = [0 for i in range(self.houses)]
-    else:
+    if any(sumHouses):
       return GameStates.CONTINUE
+
+    self.stores[Player.PLAYER_1] += sumHouses[0]
+    self.stores[Player.PLAYER_2] += sumHouses[1]
+    self.contents[Player.PLAYER_1] = [0 for i in range(self.houses)]
+    self.contents[Player.PLAYER_2] = [0 for i in range(self.houses)]
 
     if self.stores[Player.PLAYER_1] > self.stores[Player.PLAYER_2]:
       return GameStates.PLAYER_1_WIN
@@ -70,11 +87,10 @@ class KalahBoard(Board):
 
         currentPlayer = Player.other(currentPlayer)
         currentHouse = self.houses - 1
-        continue
-
-      self.contents[currentPlayer][currentHouse] += 1
-      seeds -= 1
-      currentHouse -= 1
+      else:
+        self.contents[currentPlayer][currentHouse] += 1
+        seeds -= 1
+        currentHouse -= 1
 
     if currentHouse < 0 and currentPlayer == self.turn:
       self.stores[currentPlayer] += 1
@@ -121,38 +137,15 @@ class KalahBoard(Board):
     LOGGER.info(outputLine)
 
 
-def evaluateBoard(board):
-  gameState = board.getGameState()
-  if gameState == GameStates.PLAYER_1_WIN:
-    return INF
-  elif gameState == GameStates.PLAYER_2_WIN:
-    return NEG_INF
-  elif gameState == GameStates.DRAW:
-    return 0
-
-  p1score = board.stores[Player.PLAYER_1]
-  p2score = board.stores[Player.PLAYER_2]
-
-  for house in range(len(board.contents[Player.PLAYER_1])):
-    if board.contents[Player.PLAYER_1][house] == house + 1:
-      p1score += 1
-
-  for house in range(len(board.contents[Player.PLAYER_2])):
-    if board.contents[Player.PLAYER_2][house] == house + 1:
-      p2score += 1
-
-  return p1score - p2score
-
-
 if __name__ == "__main__":
   setupStdoutLogger()
 
   game = Game(KalahBoard(6, 4))
 
-  userPlayer = UserPlayer("Gerald")
+  userPlayer = UserPlayer("Player")
   game.setPlayer(userPlayer, Player.PLAYER_1)
 
-  montePlayer = MonteCarloPlayer("Monty", evaluateBoard)
+  montePlayer = MonteCarloPlayer("Monty")
   game.setPlayer(montePlayer, Player.PLAYER_2)
 
   game.playGame()

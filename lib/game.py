@@ -70,6 +70,7 @@ class Game(object):
 
     move = activePlayer.getMove(self.board)
     self.board.makeMove(move, activePlayer.PLAYER_NUM)
+    LOGGER.debug("Evaluate: %s" % self.board.evaluate())
 
   def playGame(self):
     assert self.player1 is not None
@@ -93,3 +94,4 @@ class Game(object):
       LOGGER.info("Player 2 wins! Well Done %s." % self.player2.name)
     else:
       LOGGER.info("Game ended in a draw.")
+
